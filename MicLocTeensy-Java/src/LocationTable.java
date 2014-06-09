@@ -6,9 +6,10 @@ import java.util.ArrayList;
 
 public class LocationTable {
 
-	public static int						LOCMETHOD_AVGALLERRORS		= 1;
-	public static int						LOCMETHOD_TRIANGLECROSSOVER	= 2;
-
+	public static int						LOCMETHOD_AVGALLERRORS	= 1;
+	public static int						LOCMETHOD_2MICCROSSOVER	= 2;
+	public static int						LOCMETHOD_TRIANGLECROSSOVER	= 3;
+	
 	public ArrayList<LocationTableEntry>	table;
 	public ArrayList<MicInfo>				mics;
 	public int								scale;
@@ -21,6 +22,9 @@ public class LocationTable {
 		this.scale = scale;
 	}
 
+	//CALCULATE A GRID OF SIZEX*SIZEY SIZE WITH LOCATIONS AND TIMINGS FOR EACH POINT IN RELATIONSHIP TO MICS
+    //SEE LocationTableEntry.calc()
+		
 	public void generateTable(ArrayList<MicInfo> mics, double soundSpeed, int x, int y, int sizex, int sizey) {
 		this.mics = mics;
 		this.x = x;
@@ -51,7 +55,7 @@ public class LocationTable {
 		double bestAlpha = 99999999;
 		
 
-		if (locMethod == 1) {
+		if (locMethod == LOCMETHOD_AVGALLERRORS) {
 			for (LocationTableEntry lte : table) {
 				// DO HEAT MAP
 				g = r = b = a = 0;
@@ -75,10 +79,10 @@ public class LocationTable {
 			}
 		}
 
-		if (locMethod == 2 || locMethod == 3) {
+		if (locMethod == LOCMETHOD_2MICCROSSOVER || locMethod == LOCMETHOD_TRIANGLECROSSOVER) {
 			ArrayList<ArrayList> micPosCombinations = null;
-			if (locMethod == 2) micPosCombinations = getDualCombinations();
-			if (locMethod == 3) micPosCombinations = getTriangleCombinations();
+			if (locMethod == LOCMETHOD_2MICCROSSOVER) micPosCombinations = getDualCombinations();
+			if (locMethod == LOCMETHOD_TRIANGLECROSSOVER) micPosCombinations = getTriangleCombinations();
 
 			for (LocationTableEntry lte : table) {
 				int c = 0;
@@ -111,8 +115,8 @@ public class LocationTable {
 				}
 
 				a = aa * 1.0 / c;
-				if (locMethod == 2) g = (minDiff / a * 256) * 3;
-				if (locMethod == 3) r = (minDiff / a * 256) * 3;
+				if (locMethod == LOCMETHOD_2MICCROSSOVER) g = (minDiff / a * 256) * 3;
+				if (locMethod == LOCMETHOD_TRIANGLECROSSOVER) r = (minDiff / a * 256) * 3;
 				a *= 100;
 				setRGB(image, lte.p.x / scale + sizex / 2, -lte.p.y / scale + sizey / 2 - 1, (int) Math.round(r), (int) Math.round(g), (int) Math.round(b), (int) Math.round(a));
 			}
@@ -133,14 +137,6 @@ public class LocationTable {
 		//g2d.drawString("Real Distance Mic1: " + Math.round(origin.p.distance(mics.get(0).location) / 10) + " cm", 10, 30);
 		g2d.drawString("Best Distance Mic1: " + Math.round(bestLocation.p.distance(mics.get(0).location) / 10) + " cm", 10, 50);
 
-		// alpha diff best
-		/*double alpha = 0;
-		for (int i = 0; i < best.tdMics.size(); i++) {
-			alpha += Math.abs(best.tdMics.get(i) - origin.tdMics.get(i));
-		}
-
-		g2d.drawString("Best Alpha: " + alpha, 10, 70);
-		*/
 		g2d.drawString("Possible locs: " + possibleLocs, 10, 90);
 
 		g2d.setColor(Color.YELLOW);
@@ -164,6 +160,12 @@ public class LocationTable {
 
 		return image;
 	}
+
+	
+	//GET AN ARRAY OF ALL POSSIBLE TRIPLETS OF MICS FOR THIS MIC CONFIGURATION
+	//FOR EXAMPLE: IF THERE IS 3 MICS IN THE SETUP, THERE WILL ONLY BE ONE COMBINATION
+	//IF THERE IS 4 MICS IN THE SETUP, WE CAN HAVE 4 POSSIBLE 'TRIANGLES' FOR THE 4 VERTICES
+	//(LAZY CODING FOLLOWS)
 
 	private ArrayList<ArrayList> getTriangleCombinations() {
 		ArrayList<ArrayList> micPosCombinations = new ArrayList<ArrayList>();
@@ -306,6 +308,10 @@ public class LocationTable {
 		return micPosCombinations;
 	}
 
+	//GET AN ARRAY OF ALL POSSIBLE PAIRS OF MICS FOR THIS MIC CONFIGURATION
+	//FOR EXAMPLE: IF THERE IS 3 MICS IN THE SETUP, THERE WILL BE 3 POSSIBLE COMBINATIONS
+	//IE, (MIC1,MIC2), (MIC1,MIC3), (MIC2,MIC3)
+
 	private ArrayList<ArrayList> getDualCombinations() {
 		ArrayList<ArrayList> micPosCombinations = new ArrayList<ArrayList>();
 		ArrayList<Integer> micPos;
@@ -322,7 +328,7 @@ public class LocationTable {
 	}
 
 	
-	
+	//SUM AND AVERAGE THE DIFERENCE OF ALL DTOA BETWEEN TWO POINTS
 	private double avgAllErrors(ArrayList<Double> tdMics, LocationTableEntry origin) {
 		double a = 0;
 		for (int i = 0; i < tdMics.size(); i++) {
@@ -332,6 +338,7 @@ public class LocationTable {
 		return a;
 	}
 
+	//SUM AND AVERAGE THE DIFERENCE OF DTOA BETWEEN TWO POINTS, GIVEN A LIST OF MIC POSITIONS TO AVERAGE
 	private double avgErrors(ArrayList<Double> tdMics, LocationTableEntry origin, ArrayList<Integer> micPos) {
 		double a = 0;
 		for (int i = 0; i < micPos.size(); i++) {

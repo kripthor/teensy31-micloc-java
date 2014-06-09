@@ -210,7 +210,7 @@ public class MicLocTeensy31 {
 						System.out.println("Done. Tablesize: " + table.table.size());
 					}
 
-					BufferedImage image = table.heatMap(bestLte, 2, samplesPerUsec);
+					BufferedImage image = table.heatMap(bestLte, LocationTable.LOCMETHOD_2MICCROSSOVER, samplesPerUsec);
 					System.out.println("Best probable location: "+table.bestLocation);
 					try {
 						fpc++;
